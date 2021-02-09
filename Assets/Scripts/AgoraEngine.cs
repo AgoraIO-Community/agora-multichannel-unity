@@ -11,7 +11,7 @@ public class AgoraEngine : MonoBehaviour
 
     // Party Channel
     private const string partyChannelName = "partyChannel";
-    private const string partyChannelToken = "006e22a665af29d4904860d3e5f62fb4544IAAE+qyFPkEqJUc0b4eAcRxm14Sam1rBNlhK0zbxRJW2hwErAdIAAAAAEAC0V+LrwckRYAEAAQDByRFg";
+    private const string partyChannelToken = "006e22a665af29d4904860d3e5f62fb4544IABwJB4cZyrNhgpD+Dbjq3DpZxbDaRZpK9rvaIMh1nR/0wErAdIAAAAAEABoKgnHMWIjYAEAAQAxYiNg";
 
     // Broadcast Channel
     private const string broadcastChannelName = "broadcastChannel";
@@ -36,8 +36,8 @@ public class AgoraEngine : MonoBehaviour
         }
 
         // set callbacks (optional)
-        //mRtcEngine.OnJoinChannelSuccess = OnJoinChannelSuccessHandler;
-        //mRtcEngine.OnUserJoined = OnUserJoinedHandler;
+        //mRtcEngine.OnJoinChannelSuccess = OnPartyJoinChannelSuccessHandler;
+        //mRtcEngine.OnUserJoined = OnUserJoinedPartyHandler;
         
 
         // enable video
@@ -54,13 +54,13 @@ public class AgoraEngine : MonoBehaviour
         AgoraChannel partyChannel = mRtcEngine.CreateChannel(partyChannelName);
         ChannelMediaOptions partyChannelMediaOptions = new ChannelMediaOptions(true, true);
         partyChannel.ChannelOnJoinChannelSuccess = OnPartyJoinChannelSuccessHandler;
-        partyChannel.ChannelOnUserJoined = OnUserJoinedPartyHandler;
+        partyChannel.ChannelOnUserJoined = OnUserJoinedBroadcastHandler;
         partyChannel.JoinChannel(partyChannelToken, null, 0, partyChannelMediaOptions);
 
         // Broadcast Channel;
-        AgoraChannel broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
-        ChannelMediaOptions broadcastChannelMediaOptions = new ChannelMediaOptions(false, false);
-        
+        //AgoraChannel broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
+        //ChannelMediaOptions broadcastChannelMediaOptions = new ChannelMediaOptions(false, false);
+
     }
 
     #region Party Channel Callbacks
@@ -72,7 +72,7 @@ public class AgoraEngine : MonoBehaviour
         CreateUserVideoSurface(uid, true);
     }
 
-    public void OnUserJoinedPartyHandler(string channelId, uint uid, int elapsed)
+    public void OnUserJoinedPartyHandler(uint uid, int elapsed)
     {
         Debug.Log("On user joined party - channel: + " + uid);
         CreateUserVideoSurface(uid, false);
