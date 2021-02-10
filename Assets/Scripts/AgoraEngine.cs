@@ -50,6 +50,7 @@ public class AgoraEngine : MonoBehaviour
         ChannelMediaOptions partyChannelMediaOptions = new ChannelMediaOptions(true, true);
         partyChannel.ChannelOnJoinChannelSuccess = OnPartyJoinChannelSuccessHandler;
         partyChannel.ChannelOnUserJoined = OnUserJoinedPartyHandler;
+        partyChannel.ChannelOnLeaveChannel = OnLeavePartyHandler;
         partyChannel.ChannelOnUserOffLine = OnUserLeftPartyHandler;
         partyChannel.JoinChannel(partyChannelToken, null, 0, partyChannelMediaOptions);
 
@@ -73,11 +74,19 @@ public class AgoraEngine : MonoBehaviour
     public void OnUserJoinedPartyHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("On user joined party - channel: + " + uid);
+
         CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
+    }
+
+    private void OnLeavePartyHandler(string channelID, RtcStats stats)
+    {
+        Debug.Log("You left the party channel.");
     }
 
     public void OnUserLeftPartyHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
     {
+        Debug.Log("User left party - channel: + " + uid);
+
         RemoveUserVideoSurface(uid);
     }
     #endregion
@@ -148,7 +157,14 @@ public class AgoraEngine : MonoBehaviour
         playerVideoList.Add(newUserVideo);
 
         // Update our VideoSurface to reflect new users
-        VideoSurface newVideoSurface = newUserVideo.GetComponent<VideoSurface>();
+        //VideoSurface newVideoSurface = newUserVideo.GetComponent<VideoSurface>();
+        //VideoSurface newVideoSurface = newUserVideo.AddComponent<VideoSurface>();
+        VideoSurface newVideoSurface = newUserVideo.AddComponent<VideoSurface>();
+        newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
+
+
+
+
         if (newVideoSurface == null)
         {
             Debug.LogError("CreateUserVideoSurface() - VideoSurface component is null on newly joined user");
@@ -157,15 +173,20 @@ public class AgoraEngine : MonoBehaviour
 
         if (isLocalUser == false)
         {
-            newVideoSurface.SetForUser(uid);
+            //newVideoSurface.SetForUser(uid);
+            //newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
+            //newVideoSurface.SetEnable(true);
         }
         newVideoSurface.SetGameFps(30);
 
         // Update our "Content" container that holds all the newUserVideo image planes
-        //content.sizeDelta = new Vector2(0, playerVideoList.Count * spaceBetweenUserVideos + 140);
 
-        //UpdatePlayerVideoPostions();
-        //UpdateLeavePartyButtonState();
+        if(spawnPoint == partyChatSpawnPoint)
+        {
+            partyChatContentWindow.sizeDelta = new Vector2(0, playerVideoList.Count * spaceBetweenUserVideos + 140);
+        }
+        
+        UpdatePlayerVideoPostions();
     }
 
     private void UpdatePlayerVideoPostions()

@@ -551,7 +551,7 @@ MonoBehaviour:
     type: 3}
   partySpawnPoint: {fileID: 665526493409202831}
   broadcastSpawnPoint: {fileID: 19568885}
-  partyChatContentWindow: {fileID: 0}
+  partyChatContentWindow: {fileID: 1088416560157144801}
 --- !u!4 &875705573
 Transform:
   m_ObjectHideFlags: 0
