@@ -11,7 +11,7 @@ public class AgoraEngine : MonoBehaviour
 
     // Party Channel
     private const string partyChannelName = "partyChannel";
-    private const string partyChannelToken = "006e22a665af29d4904860d3e5f62fb4544IAAxEYFM02S6687Fi70hOlG7pP+sCZuvxZ6mkecAoYpSjgErAdIAAAAAEABoKgnHt6klYAEAAQC3qSVg";
+    private const string partyChannelToken = "006e22a665af29d4904860d3e5f62fb4544IABDjIMO5OxhEXxwhThw5YmaNso4Rn7JY4b9Klxqzv9bqwErAdIAAAAAEABoKgnHNBsnYAEAAQA0Gydg";
 
     // Broadcast Channel
     private const string broadcastChannelName = "broadcastChannel";
@@ -55,12 +55,12 @@ public class AgoraEngine : MonoBehaviour
         partyChannel.JoinChannel(partyChannelToken, null, 0, partyChannelMediaOptions);
 
         // Broadcast Channel;
-        mRtcEngine.SetChannelProfile(CHANNEL_PROFILE.CHANNEL_PROFILE_LIVE_BROADCASTING);
-        AgoraChannel broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
-        ChannelMediaOptions broadcastChannelMediaOptions = new ChannelMediaOptions(true, true);
-        broadcastChannel.ChannelOnJoinChannelSuccess = OnBroadcastJoinChannelSuccessHandler;
-        broadcastChannel.ChannelOnUserJoined = OnUserJoinedBroadcastHandler;
-        broadcastChannel.JoinChannel(broadcastChannelToken, null, 0, broadcastChannelMediaOptions);
+        //mRtcEngine.SetChannelProfile(CHANNEL_PROFILE.CHANNEL_PROFILE_LIVE_BROADCASTING);
+        //AgoraChannel broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
+        //ChannelMediaOptions broadcastChannelMediaOptions = new ChannelMediaOptions(true, true);
+        //broadcastChannel.ChannelOnJoinChannelSuccess = OnBroadcastJoinChannelSuccessHandler;
+        //broadcastChannel.ChannelOnUserJoined = OnUserJoinedBroadcastHandler;
+        //broadcastChannel.JoinChannel(broadcastChannelToken, null, 0, broadcastChannelMediaOptions);
     }
 
     #region Party Channel Callbacks
@@ -157,12 +157,10 @@ public class AgoraEngine : MonoBehaviour
         playerVideoList.Add(newUserVideo);
 
         // Update our VideoSurface to reflect new users
-        //VideoSurface newVideoSurface = newUserVideo.GetComponent<VideoSurface>();
+        VideoSurface newVideoSurface = newUserVideo.GetComponent<VideoSurface>();
         //VideoSurface newVideoSurface = newUserVideo.AddComponent<VideoSurface>();
-        VideoSurface newVideoSurface = newUserVideo.AddComponent<VideoSurface>();
-        newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
-
-
+        //newVideoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.Renderer);
+        //newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
 
 
         if (newVideoSurface == null)
@@ -173,11 +171,10 @@ public class AgoraEngine : MonoBehaviour
 
         if (isLocalUser == false)
         {
+            newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
             //newVideoSurface.SetForUser(uid);
-            //newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
-            //newVideoSurface.SetEnable(true);
         }
-        newVideoSurface.SetGameFps(30);
+        //newVideoSurface.SetGameFps(30);
 
         // Update our "Content" container that holds all the newUserVideo image planes
 

@@ -545,7 +545,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d820744914074e3bad9aed43673d386, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  appID: 
+  appID: e22a665af29d4904860d3e5f62fb4544
   partyChatSpawnPoint: {fileID: 665526493409202831}
   userVideoPrefab: {fileID: 2443127755245954865, guid: f930dbfb6dd864f51a86e2cce03ce729,
     type: 3}
