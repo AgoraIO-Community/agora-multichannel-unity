@@ -85,21 +85,16 @@ public class AgoraEngine : MonoBehaviour
     //}
 
     #region Party Channel Callbacks
-    public void OnPartyJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
+    public void OnPartyJoinChannelSuccessHandler(string channelID, uint uid, int elapsed)
     {
-        Debug.Log("Join party channel success - channel: " + channelName + " uid: " + uid);
-
-        //CreateUserVideoSurface(uid, true, partyChatSpawnPoint);
-        //MakeVideoView(channelName, uid, partyChatSpawnPoint);
-
+        Debug.Log("Join party channel success - channel: " + channelID + " uid: " + uid);
+        MakeImageSurface(channelID, uid, partyChatSpawnPoint, true);
     }
 
     public void OnUserJoinedPartyHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("On user joined party - channel: + " + uid);
-
-        //CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
-        MakeVideoView(channelID, uid, partyChatSpawnPoint);
+        MakeImageSurface(channelID, uid, partyChatSpawnPoint);
     }
 
     private void OnLeavePartyHandler(string channelID, RtcStats stats)
@@ -119,13 +114,13 @@ public class AgoraEngine : MonoBehaviour
     public void OnBroadcastJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
     {
         Debug.Log("Join broadcast channel success - channel: " + channelName + " uid: " + uid);
-        CreateUserVideoSurface(uid, true, broadcastSpawnPoint);
+        //CreateUserVideoSurface(uid, true, broadcastSpawnPoint);
     }
 
     public void OnUserJoinedBroadcastHandler(string channelId, uint uid, int elapsed)
     {
         Debug.Log("On user joined broadcast - channel: + " + uid);
-        CreateUserVideoSurface(uid, false, broadcastSpawnPoint);
+        //CreateUserVideoSurface(uid, false, broadcastSpawnPoint);
     }
 
     
@@ -149,36 +144,41 @@ public class AgoraEngine : MonoBehaviour
     }
     #endregion
 
-
-
-    void MakeVideoView(string channelID, uint uid, Transform spawnPoint)
+    void MakeImageSurface(string channelID, uint uid, Transform spawnPoint, bool isLocalUser = false)
     {
-        GameObject go = GameObject.Find(uid.ToString());
-        if(go != null)
+        if(GameObject.Find(uid.ToString()) != null)
         {
+            Debug.Log("Already a video surface with this uid: " + uid.ToString());
             return;
         }
 
-        VideoSurface videoSurface = MakeImageSurface(uid.ToString(), spawnPoint);
-        if(videoSurface != null)
-        {
-            videoSurface.SetForMultiChannelUser(channelID, uid);
-        }
-    }
-
-    VideoSurface MakeImageSurface(string objectName, Transform spawnPoint)
-    {
         GameObject go = new GameObject();
-        go.name = objectName;
+        go.name = uid.ToString();
         go.AddComponent<RawImage>();
+        go.transform.localScale = new Vector3(1, -1, 1);
 
-        if(spawnPoint != null)
+        if (spawnPoint != null)
         {
             go.transform.parent = spawnPoint;
         }
 
+        //if (spawnPoint == partyChatSpawnPoint)
+        //{
+        //    partyChatContentWindow.sizeDelta = new Vector2(0, playerVideoList.Count * spaceBetweenUserVideos + 140);
+        //}
+        
+        float spawnY = playerVideoList.Count * spaceBetweenUserVideos * -1;
+        go.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, spawnY);
+
         VideoSurface videoSurface = go.AddComponent<VideoSurface>();
-        return videoSurface;
+
+        if(isLocalUser == false)
+        {
+            videoSurface.SetForMultiChannelUser(channelID, uid);
+        }
+
+        UpdatePlayerVideoPostions();
+        playerVideoList.Add(go);
     }
 
 
