@@ -70,33 +70,36 @@ public class AgoraEngine : MonoBehaviour
         //broadcastChannel.JoinChannel(broadcastChannelToken, null, 0, broadcastChannelMediaOptions);
     }
 
-    public void OnJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
-    {
-        Debug.Log("Join party channel success - channel: " + channelName + " uid: " + uid);
+    //public void OnJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
+    //{
+    //    Debug.Log("Join party channel success - channel: " + channelName + " uid: " + uid);
 
-        CreateUserVideoSurface(uid, true, partyChatSpawnPoint);
-    }
+    //    CreateUserVideoSurface(uid, true, partyChatSpawnPoint);
+    //}
 
-    public void OnUserJoinedHandler(uint uid, int elapsed)
-    {
-        Debug.Log("On user joined party - channel: + " + uid);
+    //public void OnUserJoinedHandler(uint uid, int elapsed)
+    //{
+    //    Debug.Log("On user joined party - channel: + " + uid);
 
-        CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
-    }
+    //    CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
+    //}
 
     #region Party Channel Callbacks
     public void OnPartyJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
     {
         Debug.Log("Join party channel success - channel: " + channelName + " uid: " + uid);
 
-        CreateUserVideoSurface(uid, true, partyChatSpawnPoint);
+        //CreateUserVideoSurface(uid, true, partyChatSpawnPoint);
+        //MakeVideoView(channelName, uid, partyChatSpawnPoint);
+
     }
 
     public void OnUserJoinedPartyHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("On user joined party - channel: + " + uid);
 
-        CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
+        //CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
+        MakeVideoView(channelID, uid, partyChatSpawnPoint);
     }
 
     private void OnLeavePartyHandler(string channelID, RtcStats stats)
@@ -145,6 +148,39 @@ public class AgoraEngine : MonoBehaviour
         TerminateAgoraEngine();
     }
     #endregion
+
+
+
+    void MakeVideoView(string channelID, uint uid, Transform spawnPoint)
+    {
+        GameObject go = GameObject.Find(uid.ToString());
+        if(go != null)
+        {
+            return;
+        }
+
+        VideoSurface videoSurface = MakeImageSurface(uid.ToString(), spawnPoint);
+        if(videoSurface != null)
+        {
+            videoSurface.SetForMultiChannelUser(channelID, uid);
+        }
+    }
+
+    VideoSurface MakeImageSurface(string objectName, Transform spawnPoint)
+    {
+        GameObject go = new GameObject();
+        go.name = objectName;
+        go.AddComponent<RawImage>();
+
+        if(spawnPoint != null)
+        {
+            go.transform.parent = spawnPoint;
+        }
+
+        VideoSurface videoSurface = go.AddComponent<VideoSurface>();
+        return videoSurface;
+    }
+
 
 
     // Create new image plane to display users in party.
