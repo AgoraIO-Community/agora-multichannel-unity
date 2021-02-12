@@ -11,23 +11,25 @@ public class AgoraEngine : MonoBehaviour
 
     // Party Channel
     private const string partyChannelName = "partyChannel";
-    private const string partyChannelToken = "006e22a665af29d4904860d3e5f62fb4544IABDjIMO5OxhEXxwhThw5YmaNso4Rn7JY4b9Klxqzv9bqwErAdIAAAAAEABoKgnHNBsnYAEAAQA0Gydg";
+    private const string partyChannelToken = "006e22a665af29d4904860d3e5f62fb4544IAAG30ZLhxmLy1AYmXFvP+Utv/K34J4jh04MOvjJGFIIfQErAdIAAAAAEABoKgnH3mgnYAEAAQDeaCdg";
 
     // Broadcast Channel
     private const string broadcastChannelName = "broadcastChannel";
-    private const string broadcastChannelToken = "006c36f034a41a5476fae92da698a5f2396IABFK1PbrofipKKEp7tEj1emhTV8CzijtzhhDFrW9iQMf1dw9zgAAAAAEABoKgnH12MjYAEAAQDXYyNg";
+    private const string broadcastChannelToken = "006c36f034a41a5476fae92da698a5f2396IAAJ0uwIVfY/xCYAKWZ8rnA+JD7a46GdKm1RBg//oJYrAVdw9zgAAAAAEABoKgnHJ2cnYAEAAQAnZydg";
 
     private List<GameObject> playerVideoList;
     private float spaceBetweenUserVideos = 150f;
     public Transform partyChatSpawnPoint;
-    public GameObject userVideoPrefab;
-
-    public Transform partySpawnPoint;
     public Transform broadcastSpawnPoint;
-
+    public GameObject userVideoPrefab;
     public RectTransform partyChatContentWindow;
 
     AgoraChannel partyChannel;
+    AgoraChannel broadcastChannel;
+
+    public Toggle isBroadcasterToggle;
+
+    public bool isBroadcaster = false;
 
     void Start()
     {
@@ -36,53 +38,71 @@ public class AgoraEngine : MonoBehaviour
         mRtcEngine = IRtcEngine.GetEngine(appID);
         mRtcEngine.SetMultiChannelWant(true);
 
-
         if (mRtcEngine == null)
         {
+            Debug.Log("engine is null");
             return;
         }
 
         // enable video
+        int enableVideo =
         mRtcEngine.EnableVideo();
         // allow camera output callback
         mRtcEngine.EnableVideoObserver();
-        //mRtcEngine.OnJoinChannelSuccess = OnJoinChannelSuccessHandler;
-        //mRtcEngine.OnUserJoined = OnUserJoinedHandler;
-        //mRtcEngine.JoinChannel("testChannel", null, 0);
 
+        Debug.Log("enable Video: " + enableVideo);
+    }
+
+    public void Button_JoinPartyChannel()
+    {
+        Debug.Log("pressing party button");
         // Party Channel
         partyChannel = mRtcEngine.CreateChannel(partyChannelName);
+
         partyChannel.ChannelOnJoinChannelSuccess = OnPartyJoinChannelSuccessHandler;
         partyChannel.ChannelOnUserJoined = OnUserJoinedPartyHandler;
         partyChannel.ChannelOnLeaveChannel = OnLeavePartyHandler;
         partyChannel.ChannelOnUserOffLine = OnUserLeftPartyHandler;
+
+        int channelJoin =
         partyChannel.JoinChannel(partyChannelToken, null, 0, new ChannelMediaOptions(true, true));
         partyChannel.Publish();
 
-        
-
-        // Broadcast Channel;
-        //mRtcEngine.SetChannelProfile(CHANNEL_PROFILE.CHANNEL_PROFILE_LIVE_BROADCASTING);
-        //AgoraChannel broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
-        //ChannelMediaOptions broadcastChannelMediaOptions = new ChannelMediaOptions(true, true);
-        //broadcastChannel.ChannelOnJoinChannelSuccess = OnBroadcastJoinChannelSuccessHandler;
-        //broadcastChannel.ChannelOnUserJoined = OnUserJoinedBroadcastHandler;
-        //broadcastChannel.JoinChannel(broadcastChannelToken, null, 0, broadcastChannelMediaOptions);
+        Debug.Log(channelJoin);
     }
 
-    //public void OnJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
-    //{
-    //    Debug.Log("Join party channel success - channel: " + channelName + " uid: " + uid);
+    public void Button_LeavePartyChannel()
+    {
+        partyChannel.LeaveChannel();
+        partyChannel.Unpublish();
+    }
 
-    //    CreateUserVideoSurface(uid, true, partyChatSpawnPoint);
-    //}
+    public void Button_JoinBroadcastChannel()
+    {
+        // Broadcast Channel;
+        broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
+        broadcastChannel.SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_AUDIENCE);
 
-    //public void OnUserJoinedHandler(uint uid, int elapsed)
-    //{
-    //    Debug.Log("On user joined party - channel: + " + uid);
+        broadcastChannel.ChannelOnJoinChannelSuccess = OnBroadcastJoinChannelSuccessHandler;
+        broadcastChannel.ChannelOnUserJoined = OnUserJoinedBroadcastHandler;
+        broadcastChannel.ChannelOnLeaveChannel = OnLeaveBroadcastHandler;
+        broadcastChannel.ChannelOnUserOffLine = OnUserLeftBroadcastHandler;
 
-    //    CreateUserVideoSurface(uid, false, partyChatSpawnPoint);
-    //}
+        broadcastChannel.JoinChannel(broadcastChannelToken, null, 0, new ChannelMediaOptions(true, true));
+        broadcastChannel.Publish();
+    }
+
+    public void Button_LeaveBroadcastChannel()
+    {
+        broadcastChannel.LeaveChannel();
+        broadcastChannel.Unpublish();
+    }
+
+    public void Toggle_BroadcasterStateChanged()
+    {
+        isBroadcaster = isBroadcasterToggle.isOn;
+        Debug.Log("user is broadcaster: " + isBroadcaster);
+    }
 
     #region Party Channel Callbacks
     public void OnPartyJoinChannelSuccessHandler(string channelID, uint uid, int elapsed)
@@ -100,27 +120,49 @@ public class AgoraEngine : MonoBehaviour
     private void OnLeavePartyHandler(string channelID, RtcStats stats)
     {
         Debug.Log("You left the party channel.");
+        foreach(GameObject player in playerVideoList)
+        {
+            Destroy(player.gameObject);
+        }
+
+        playerVideoList.Clear();
     }
 
     public void OnUserLeftPartyHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
     {
-        Debug.Log("User left party - channel: + " + uid);
-
+        Debug.Log("User: " + uid + " left party - channel: + " + uid + "for reason: " + reason);
         RemoveUserVideoSurface(uid);
     }
     #endregion
 
     #region Broadcast Channel Callbacks
-    public void OnBroadcastJoinChannelSuccessHandler(string channelName, uint uid, int elapsed)
+    public void OnBroadcastJoinChannelSuccessHandler(string channelID, uint uid, int elapsed)
     {
-        Debug.Log("Join broadcast channel success - channel: " + channelName + " uid: " + uid);
-        //CreateUserVideoSurface(uid, true, broadcastSpawnPoint);
+        Debug.Log("Join broadcast channel success - channel: " + channelID + " uid: " + uid);
+        MakeImageSurface(channelID, uid, broadcastSpawnPoint, true);
     }
 
-    public void OnUserJoinedBroadcastHandler(string channelId, uint uid, int elapsed)
+    public void OnUserJoinedBroadcastHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("On user joined broadcast - channel: + " + uid);
-        //CreateUserVideoSurface(uid, false, broadcastSpawnPoint);
+        MakeImageSurface(channelID, uid, broadcastSpawnPoint);
+    }
+
+    public void OnLeaveBroadcastHandler(string channelID, RtcStats stats)
+    {
+        Debug.Log("You left the broadcast.");
+        foreach (GameObject player in playerVideoList)
+        {
+            Destroy(player.gameObject);
+        }
+
+        playerVideoList.Clear();
+    }
+
+    public void OnUserLeftBroadcastHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
+    {
+        Debug.Log("User: " + uid + " left broadcast - channel: + " + uid + "for reason: " + reason);
+        RemoveUserVideoSurface(uid);
     }
 
     
@@ -131,8 +173,19 @@ public class AgoraEngine : MonoBehaviour
     {
         if (mRtcEngine != null)
         {
-            partyChannel.LeaveChannel();
-            partyChannel.ReleaseChannel();
+            if(partyChannel != null)
+            {
+                Debug.Log("cleaning up party channel");
+                partyChannel.LeaveChannel();
+                partyChannel.ReleaseChannel();
+            }
+
+            if(broadcastChannel != null)
+            {
+                Debug.Log("cleaning up broadcast");
+                broadcastChannel.LeaveChannel();
+                broadcastChannel.ReleaseChannel();
+            }
             IRtcEngine.Destroy();
         }
     }
