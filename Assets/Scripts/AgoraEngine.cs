@@ -23,25 +23,32 @@ public class AgoraEngine : MonoBehaviour
     private const string broadcastChannelName = "broadcastChannel";
     private const string broadcastChannelToken = "006c36f034a41a5476fae92da698a5f2396IAAJ0uwIVfY/xCYAKWZ8rnA+JD7a46GdKm1RBg//oJYrAVdw9zgAAAAAEABoKgnHJ2cnYAEAAQAnZydg";
 
-    private List<GameObject> playerVideoList;
+    private AgoraChannel partyChannel;
+    private AgoraChannel broadcastChannel;
+    private List<GameObject> partyVideoList;
+    private List<GameObject> broadcastVideoList;
     private float spaceBetweenUserVideos = 150f;
+
+    [Header("Party Channel")]
     public Transform partyChatSpawnPoint;
-    public Transform broadcastSpawnPoint;
-    public GameObject userVideoPrefab;
     public RectTransform partyChatContentWindow;
+    
+    [Header("Broadcast Channel")]
+    public Transform broadcastSpawnPoint;
+    public RectTransform broadcastChatContentWindow;
 
-    AgoraChannel partyChannel;
-    AgoraChannel broadcastChannel;
+    
 
+    [Header("Misc")]
     public Toggle isBroadcasterToggle;
     public bool isPublishing;
-
-    public Text publishButtonText;
     public CLIENT_ROLE_TYPE localClientRole;
+    public GameObject userVideoPrefab;
 
     void Start()
     {
-        playerVideoList = new List<GameObject>();
+        partyVideoList = new List<GameObject>();
+        broadcastVideoList = new List<GameObject>();
         isPublishing = false;
         localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
 
@@ -245,12 +252,12 @@ public class AgoraEngine : MonoBehaviour
     private void OnLeavePartyHandler(string channelID, RtcStats stats)
     {
         Debug.Log("You left the party channel.");
-        foreach(GameObject player in playerVideoList)
+        foreach(GameObject player in partyVideoList)
         {
             Destroy(player.gameObject);
         }
 
-        playerVideoList.Clear();
+        partyVideoList.Clear();
     }
 
     public void OnUserLeftPartyHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
@@ -276,12 +283,12 @@ public class AgoraEngine : MonoBehaviour
     public void OnLeaveBroadcastHandler(string channelID, RtcStats stats)
     {
         Debug.Log("You left the broadcast.");
-        foreach (GameObject player in playerVideoList)
+        foreach (GameObject player in broadcastVideoList)
         {
             Destroy(player.gameObject);
         }
 
-        playerVideoList.Clear();
+        partyVideoList.Clear();
     }
 
     public void OnUserLeftBroadcastHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
@@ -300,14 +307,12 @@ public class AgoraEngine : MonoBehaviour
         {
             if(partyChannel != null)
             {
-                Debug.Log("cleaning up party channel");
                 partyChannel.LeaveChannel();
                 partyChannel.ReleaseChannel();
             }
 
             if(broadcastChannel != null)
             {
-                Debug.Log("cleaning up broadcast");
                 broadcastChannel.LeaveChannel();
                 broadcastChannel.ReleaseChannel();
             }
@@ -340,101 +345,45 @@ public class AgoraEngine : MonoBehaviour
             go.transform.SetParent(spawnPoint);
         }
 
-        //if (spawnPoint == partyChatSpawnPoint)
-        //{
-        //    partyChatContentWindow.sizeDelta = new Vector2(0, playerVideoList.Count * spaceBetweenUserVideos + 140);
-        //}
-        
-        float spawnY = playerVideoList.Count * spaceBetweenUserVideos * -1;
+        float spawnY = 0;
+        if (spawnPoint == partyChatSpawnPoint)
+        {
+            partyChatContentWindow.sizeDelta = new Vector2(0, partyVideoList.Count * spaceBetweenUserVideos + 140);
+            spawnY = partyVideoList.Count * spaceBetweenUserVideos * -1;
+            UpdatePlayerVideoPostions();
+            partyVideoList.Add(go);
+        }
+        else if(spawnPoint == broadcastSpawnPoint)
+        {
+            broadcastChatContentWindow.sizeDelta = new Vector2(0, broadcastVideoList.Count * spaceBetweenUserVideos + 140);
+            spawnY = broadcastVideoList.Count * spaceBetweenUserVideos * -1;
+            UpdatePlayerVideoPostions();
+            broadcastVideoList.Add(go);
+        }
         go.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, spawnY);
 
         VideoSurface videoSurface = go.AddComponent<VideoSurface>();
-
-        if(isLocalUser == false)
+        if (isLocalUser == false)
         {
             videoSurface.SetForMultiChannelUser(channelID, uid);
         }
-
-        UpdatePlayerVideoPostions();
-        playerVideoList.Add(go);
-    }
-
-
-
-    // Create new image plane to display users in party.
-    private void CreateUserVideoSurface(uint uid, bool isLocalUser, Transform spawnPoint)
-    {
-        // Avoid duplicating Local player VideoSurface image plane.
-        for (int i = 0; i < playerVideoList.Count; i++)
-        {
-            if (playerVideoList[i].name == uid.ToString())
-            {
-                return;
-            }
-        }
-
-        // Get the next position for newly created VideoSurface to place inside UI Container.
-        float spawnY = playerVideoList.Count * spaceBetweenUserVideos;
-        Vector3 spawnPosition = new Vector3(0, -spawnY, 0);
-
-        // Create Gameobject that will serve as our VideoSurface.
-        GameObject newUserVideo = Instantiate(userVideoPrefab, spawnPoint.position, partyChatSpawnPoint.rotation, spawnPoint);
-        if (newUserVideo == null)
-        {
-            Debug.LogError("CreateUserVideoSurface() - newUserVideoIsNull");
-            return;
-        }
-        newUserVideo.name = uid.ToString();
-        newUserVideo.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, spawnY);
-        // newUserVideo.transform.SetParent(spawnPoint, false);
-        newUserVideo.transform.rotation = Quaternion.Euler(Vector3.forward * -180);
-
-        playerVideoList.Add(newUserVideo);
-
-        // Update our VideoSurface to reflect new users
-        VideoSurface newVideoSurface = newUserVideo.GetComponent<VideoSurface>();
-        //VideoSurface newVideoSurface = newUserVideo.AddComponent<VideoSurface>();
-        //newVideoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.Renderer);
-        newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
-
-        if (newVideoSurface == null)
-        {
-            Debug.LogError("CreateUserVideoSurface() - VideoSurface component is null on newly joined user");
-            return;
-        }
-
-        if (isLocalUser == false)
-        {
-            //newVideoSurface.SetForMultiChannelUser(partyChannelName, uid);
-            //newVideoSurface.SetForUser(uid);
-        }
-        //newVideoSurface.SetGameFps(30);
-
-        // Update our "Content" container that holds all the newUserVideo image planes
-
-        if(spawnPoint == partyChatSpawnPoint)
-        {
-            partyChatContentWindow.sizeDelta = new Vector2(0, playerVideoList.Count * spaceBetweenUserVideos + 140);
-        }
-        
-        UpdatePlayerVideoPostions();
     }
 
     private void UpdatePlayerVideoPostions()
     {
-        for (int i = 0; i < playerVideoList.Count; i++)
+        for (int i = 0; i < partyVideoList.Count; i++)
         {
-            playerVideoList[i].GetComponent<RectTransform>().anchoredPosition = Vector2.down * spaceBetweenUserVideos * i;
+            partyVideoList[i].GetComponent<RectTransform>().anchoredPosition = Vector2.down * spaceBetweenUserVideos * i;
         }
     }
 
     private void RemoveUserVideoSurface(uint deletedUID)
     {
-        foreach (GameObject player in playerVideoList)
+        foreach (GameObject player in partyVideoList)
         {
             if (player.name == deletedUID.ToString())
             {
-                playerVideoList.Remove(player);
+                partyVideoList.Remove(player);
                 Destroy(player.gameObject);
                 break;
             }
