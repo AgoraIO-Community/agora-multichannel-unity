@@ -4,6 +4,12 @@ using UnityEngine;
 using agora_gaming_rtc;
 using UnityEngine.UI;
 
+
+
+// 1. add a control for only publishing to one stream
+
+// 2. add a mechanism for grabbing a token from the server
+
 public class AgoraEngine : MonoBehaviour
 {
     public string appID;
@@ -28,12 +34,16 @@ public class AgoraEngine : MonoBehaviour
     AgoraChannel broadcastChannel;
 
     public Toggle isBroadcasterToggle;
+    public bool isPublishing;
 
-    public bool isBroadcaster = false;
+    public Text publishButtonText;
+    public CLIENT_ROLE_TYPE localClientRole;
 
     void Start()
     {
         playerVideoList = new List<GameObject>();
+        isPublishing = false;
+        localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
 
         mRtcEngine = IRtcEngine.GetEngine(appID);
         mRtcEngine.SetMultiChannelWant(true);
@@ -55,7 +65,6 @@ public class AgoraEngine : MonoBehaviour
 
     public void Button_JoinPartyChannel()
     {
-        Debug.Log("pressing party button");
         // Party Channel
         partyChannel = mRtcEngine.CreateChannel(partyChannelName);
 
@@ -64,44 +73,160 @@ public class AgoraEngine : MonoBehaviour
         partyChannel.ChannelOnLeaveChannel = OnLeavePartyHandler;
         partyChannel.ChannelOnUserOffLine = OnUserLeftPartyHandler;
 
-        int channelJoin =
         partyChannel.JoinChannel(partyChannelToken, null, 0, new ChannelMediaOptions(true, true));
-        partyChannel.Publish();
-
-        Debug.Log(channelJoin);
     }
 
     public void Button_LeavePartyChannel()
     {
         partyChannel.LeaveChannel();
-        partyChannel.Unpublish();
+        //partyChannel.ReleaseChannel();
+
+        Debug.Log("Leaving party channel");
+    }
+
+    public void Button_PublishToPartyChannel()
+    {
+        if(partyChannel == null)
+        {
+            Debug.LogError("Party channel isn't created yet");
+            return;
+        }
+
+        if(isPublishing == false)
+        {
+            int publishResult = partyChannel.Publish();
+            if (publishResult == 0)
+            {
+                isPublishing = true;
+            }
+
+            Debug.Log("Publishing to party channel result: " + publishResult);
+        }
+        else
+        {
+            Debug.Log("Already published to a channel");
+        }   
+    }
+
+    public void Button_CancelPublishFromPartyChannel()
+    {
+        if (partyChannel == null)
+        {
+            Debug.LogError("Party channel isn't created yet");
+            return;
+        }
+
+        if (isPublishing == true)
+        {
+            int unpublishResult = partyChannel.Unpublish();
+            if(unpublishResult == 0)
+            {
+                isPublishing = false;
+            }
+
+            Debug.Log("Unpublish from party channel result: " + unpublishResult);
+        }
+        else
+        {
+            Debug.Log("Not published to any channel");
+        }
     }
 
     public void Button_JoinBroadcastChannel()
     {
-        // Broadcast Channel;
         broadcastChannel = mRtcEngine.CreateChannel(broadcastChannelName);
-        broadcastChannel.SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_AUDIENCE);
+
+        if(isBroadcasterToggle.isOn)
+        {
+            broadcastChannel.SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
+            localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
+            
+        }
+        else
+        {
+            broadcastChannel.SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_AUDIENCE);
+            localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_AUDIENCE;
+        }
 
         broadcastChannel.ChannelOnJoinChannelSuccess = OnBroadcastJoinChannelSuccessHandler;
         broadcastChannel.ChannelOnUserJoined = OnUserJoinedBroadcastHandler;
         broadcastChannel.ChannelOnLeaveChannel = OnLeaveBroadcastHandler;
         broadcastChannel.ChannelOnUserOffLine = OnUserLeftBroadcastHandler;
 
+
         broadcastChannel.JoinChannel(broadcastChannelToken, null, 0, new ChannelMediaOptions(true, true));
-        broadcastChannel.Publish();
+
+        Debug.Log("Joined broadcast as " + localClientRole);
     }
 
     public void Button_LeaveBroadcastChannel()
     {
         broadcastChannel.LeaveChannel();
-        broadcastChannel.Unpublish();
+
+        Debug.Log("leaving broadcast channel");
+    }
+
+    public void Button_PublishToBroadcastChannel()
+    {
+        if(broadcastChannel == null)
+        {
+            Debug.LogError("broadcast channel isn't created yet");
+            return;
+        }
+
+        int publishResult = -5;
+        if (isPublishing == false && localClientRole == CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER)
+        {
+            publishResult = broadcastChannel.Publish();
+            if (publishResult == 0)
+            {
+                isPublishing = true;
+                Debug.Log("Publishing to broadcast channel");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("You are already publishing, and cannot publish to more than one stream.\nClient role is: " + localClientRole);
+        }
+
+        Debug.Log("Publishing to broadcast channel result: " + publishResult);
+    }
+
+    public void Button_CancelPublishToBroadcastChannel()
+    {
+        if (broadcastChannel == null)
+        {
+            Debug.LogError("broadcast channel isn't created yet");
+            return;
+        }
+
+        if (isPublishing == true)
+        {
+            int cancelPublishResult = broadcastChannel.Unpublish();
+            if(cancelPublishResult == 0)
+            {
+                isPublishing = false;
+                Debug.Log("Unpublish from broadcast result: " + cancelPublishResult);
+            }
+        }
+        else
+        {
+            Debug.Log("Not publishing anything");
+        }
     }
 
     public void Toggle_BroadcasterStateChanged()
     {
-        isBroadcaster = isBroadcasterToggle.isOn;
-        Debug.Log("user is broadcaster: " + isBroadcaster);
+        if(isBroadcasterToggle.isOn)
+        {
+            localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
+        }
+        else
+        {
+            localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_AUDIENCE;
+        }
+
+        Debug.Log("user is broadcaster: " + isBroadcasterToggle.isOn);
     }
 
     #region Party Channel Callbacks
@@ -212,7 +337,7 @@ public class AgoraEngine : MonoBehaviour
 
         if (spawnPoint != null)
         {
-            go.transform.parent = spawnPoint;
+            go.transform.SetParent(spawnPoint);
         }
 
         //if (spawnPoint == partyChatSpawnPoint)
