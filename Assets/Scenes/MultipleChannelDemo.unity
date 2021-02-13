@@ -1292,15 +1292,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   appID: e22a665af29d4904860d3e5f62fb4544
   partyChatSpawnPoint: {fileID: 665526493409202831}
+  partyChatContentWindow: {fileID: 1088416560157144801}
   broadcastSpawnPoint: {fileID: 449775022}
+  broadcastChatContentWindow: {fileID: 1051279900}
+  isBroadcasterToggle: {fileID: 1045662725}
+  isPublishing: 0
+  localClientRole: 0
   userVideoPrefab: {fileID: 2443127755245954865, guid: f930dbfb6dd864f51a86e2cce03ce729,
     type: 3}
-  partyChatContentWindow: {fileID: 1088416560157144801}
-  isBroadcasterToggle: {fileID: 1045662725}
-  isBroadcaster: 0
-  isPublishing: 0
-  publishButtonText: {fileID: 0}
-  localClientRole: 0
 --- !u!4 &875705573
 Transform:
   m_ObjectHideFlags: 0
