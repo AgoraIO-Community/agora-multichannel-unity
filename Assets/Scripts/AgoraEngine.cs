@@ -6,14 +6,14 @@ using UnityEngine.UI;
 
 
 
-// 1. add a control for only publishing to one stream
+// 1. refrain from creating video frames from users that aren't published, or are audience members
 
 // 2. add a mechanism for grabbing a token from the server
 
 public class AgoraEngine : MonoBehaviour
 {
     public string appID;
-    private  IRtcEngine mRtcEngine;
+    public static IRtcEngine mRtcEngine;
 
     // Party Channel
     private const string partyChannelName = "partyChannel";
@@ -37,13 +37,16 @@ public class AgoraEngine : MonoBehaviour
     public Transform broadcastSpawnPoint;
     public RectTransform broadcastChatContentWindow;
 
-    
-
     [Header("Misc")]
     public Toggle isBroadcasterToggle;
     public bool isPublishing;
     public CLIENT_ROLE_TYPE localClientRole;
     public GameObject userVideoPrefab;
+
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+    }
 
     void Start()
     {
@@ -52,7 +55,11 @@ public class AgoraEngine : MonoBehaviour
         isPublishing = false;
         localClientRole = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
 
-        mRtcEngine = IRtcEngine.GetEngine(appID);
+        if(mRtcEngine == null)
+        {
+            mRtcEngine = IRtcEngine.GetEngine(appID);
+        }
+
         mRtcEngine.SetMultiChannelWant(true);
 
         if (mRtcEngine == null)
