@@ -6,43 +6,53 @@ using UnityEngine.UI;
 
 public class AgoraChannelPanel : MonoBehaviour
 {
-    public string channelName;
-    public string channelToken;
+    [SerializeField] private string channelName;
+    [SerializeField] private string channelToken;
+
+    [SerializeField] private Transform videoSpawnPoint;
+    [SerializeField] private RectTransform panelContentWindow;
+    [SerializeField] private bool isPublishing;
 
     private AgoraChannel newChannel;
+    private List<AgoraUser> userVideos;
 
-    public List<GameObject> userVideoList;
-
-    public Transform videoSpawnPoint;
-    public RectTransform panelContentWindow;
-
-    public bool isPublishing;
-
-    private float spaceBetweenUserVideos = 150f;
+    private const float SPACE_BETWEEN_USER_VIDEOS = 150f;
 
     void Start()
     {
-        userVideoList = new List<GameObject>();
+        userVideos = new List<AgoraUser>();
 
+        
     }
 
     public void Button_JoinChannel()
     {
-        newChannel = AgoraEngine.mRtcEngine.CreateChannel(channelName);
+        if (newChannel == null)
+        {
+            newChannel = AgoraEngine.mRtcEngine.CreateChannel(channelName);
 
-        newChannel.ChannelOnJoinChannelSuccess = OnJoinChannelSuccessHandler;
-        newChannel.ChannelOnUserJoined = OnUserJoinedHandler;
-        newChannel.ChannelOnLeaveChannel = OnLeaveHandler;
-        newChannel.ChannelOnUserOffLine = OnUserLeftHandler;
+            newChannel.ChannelOnJoinChannelSuccess = OnJoinChannelSuccessHandler;
+            newChannel.ChannelOnUserJoined = OnUserJoinedHandler;
+            newChannel.ChannelOnLeaveChannel = OnLeaveHandler;
+            newChannel.ChannelOnUserOffLine = OnUserLeftHandler;
+            newChannel.ChannelOnRemoteVideoStats = OnRemoteVideoStatsHandler;
+        }
 
         newChannel.JoinChannel(channelToken, null, 0, new ChannelMediaOptions(true, true));
+        Debug.Log("Joining channel: " + channelName);
     }
 
     public void Button_LeaveChannel()
     {
-        newChannel.LeaveChannel();
-
-        Debug.Log("Leaving channel: " + channelName);
+        if(newChannel != null)
+        {
+            newChannel.LeaveChannel();
+            Debug.Log("Leaving channel: " + channelName);
+        }
+        else
+        {
+            Debug.LogWarning("Channel: " + channelName + " hasn't been created yet.");
+        }   
     }
 
     public void Button_PublishToPartyChannel()
@@ -101,19 +111,19 @@ public class AgoraChannelPanel : MonoBehaviour
 
     public void OnUserJoinedHandler(string channelID, uint uid, int elapsed)
     {
-        Debug.Log("On user joined party - channel: + " + uid);
+        Debug.Log("User: " + uid + "joined channel: + " + channelID);
         MakeImageSurface(channelID, uid, videoSpawnPoint);
     }
 
     private void OnLeaveHandler(string channelID, RtcStats stats)
     {
         Debug.Log("You left the party channel.");
-        foreach (GameObject player in userVideoList)
+        foreach (AgoraUser player in userVideos)
         {
-            Destroy(player.gameObject);
+            Destroy(player.userGo);
         }
 
-        userVideoList.Clear();
+        userVideos.Clear();
     }
 
     public void OnUserLeftHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
@@ -122,54 +132,85 @@ public class AgoraChannelPanel : MonoBehaviour
         RemoveUserVideoSurface(uid);
     }
 
+    private void OnRemoteVideoStatsHandler(string channelID, RemoteVideoStats remoteStats)
+    {
+        // Check my remote users...
+        foreach (AgoraUser user in userVideos)
+        {
+            if (user.userUid.ToString() == remoteStats.uid.ToString())
+            {
+                // ... are no longer sending any data across the stream.
+                if(remoteStats.receivedBitrate == 0)
+                {
+                    user.SetPublishState(false);
+                }
+                // ... are currently sending data across the stream
+                else if(remoteStats.receivedBitrate > 0)
+                {
+                    user.SetPublishState(true);
+                }
+            }
+        }
+    }
+
     void MakeImageSurface(string channelID, uint uid, Transform spawnPoint, bool isLocalUser = false)
     {
         if (GameObject.Find(uid.ToString()) != null)
         {
-            Debug.Log("Already a video surface with this uid: " + uid.ToString());
+            Debug.Log("A video surface already exists with this uid: " + uid.ToString());
             return;
         }
 
+        // Create my new image surface
         GameObject go = new GameObject();
         go.name = uid.ToString();
-        go.AddComponent<RawImage>();
+        RawImage userVideo = go.AddComponent<RawImage>();
         go.transform.localScale = new Vector3(1, -1, 1);
 
+        // Child it inside the panel scroller
         if (spawnPoint != null)
         {
             go.transform.SetParent(spawnPoint);
         }
 
-        panelContentWindow.sizeDelta = new Vector2(0, userVideoList.Count * spaceBetweenUserVideos + 140);
-        float spawnY = userVideoList.Count * spaceBetweenUserVideos * -1;
-        UpdatePlayerVideoPostions();
-        userVideoList.Add(go);        
+        // Update the layout of the panel scrollers
+        panelContentWindow.sizeDelta = new Vector2(0, userVideos.Count * SPACE_BETWEEN_USER_VIDEOS);
+        float spawnY = userVideos.Count * SPACE_BETWEEN_USER_VIDEOS * -1;
 
+        //UpdatePlayerVideoPostions();
+
+        AgoraUser newUser = new AgoraUser(uid, userVideo, go);
+        userVideos.Add(newUser);
+
+        // is this necessary?
         go.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, spawnY);
 
         VideoSurface videoSurface = go.AddComponent<VideoSurface>();
         if (isLocalUser == false)
         {
             videoSurface.SetForMultiChannelUser(channelID, uid);
+
+            // the user video starts disabled, and enables after they begin publishing 
+            userVideo.enabled = false;
         }
     }
 
     private void UpdatePlayerVideoPostions()
     {
-        for (int i = 0; i < userVideoList.Count; i++)
+        for (int i = 0; i < userVideos.Count; i++)
         {
-            userVideoList[i].GetComponent<RectTransform>().anchoredPosition = Vector2.down * spaceBetweenUserVideos * i;
+            userVideos[i].userGo.GetComponent<RectTransform>().anchoredPosition = Vector2.down * SPACE_BETWEEN_USER_VIDEOS * i;
         }
     }
 
     private void RemoveUserVideoSurface(uint deletedUID)
     {
-        foreach (GameObject player in userVideoList)
+        foreach (AgoraUser user in userVideos)
         {
-            if (player.name == deletedUID.ToString())
+            if (user.userUid.ToString() == deletedUID.ToString())
             {
-                userVideoList.Remove(player);
-                Destroy(player.gameObject);
+                userVideos.Remove(user);
+                Destroy(user.userGo);
                 break;
             }
         }
@@ -178,7 +219,7 @@ public class AgoraChannelPanel : MonoBehaviour
         UpdatePlayerVideoPostions();
 
         Vector2 oldContent = panelContentWindow.sizeDelta;
-        panelContentWindow.sizeDelta = oldContent + Vector2.down * spaceBetweenUserVideos;
+        panelContentWindow.sizeDelta = oldContent + Vector2.down * SPACE_BETWEEN_USER_VIDEOS;
         panelContentWindow.anchoredPosition = Vector2.zero;
     }
 
@@ -188,6 +229,34 @@ public class AgoraChannelPanel : MonoBehaviour
         {
             newChannel.LeaveChannel();
             newChannel.ReleaseChannel();
+        }
+    }
+}
+
+public class AgoraUser
+{
+    public AgoraUser(uint remoteUid, RawImage newUserVideo, GameObject newUserGo)
+    {
+        userUid = remoteUid;
+        userVideo = newUserVideo;
+        userGo = newUserGo;
+    }
+
+    public GameObject userGo { get; }
+
+    public RawImage userVideo { get; }
+
+    public uint userUid { get; }
+
+    public void SetPublishState(bool isBitRateActive)
+    {
+        if (isBitRateActive && userVideo.enabled == false)
+        {
+            userVideo.enabled = true;
+        }
+        else if (isBitRateActive == false && userVideo.enabled == true)
+        {
+            userVideo.enabled = false;
         }
     }
 }

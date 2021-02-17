@@ -45,6 +45,8 @@ namespace agora_gaming_rtc
         public uint videoFps = 30; 
         [SerializeField]
         AgoraVideoSurfaceType VideoSurfaceType = AgoraVideoSurfaceType.Renderer;
+
+        private Texture2D previousTexture;
         
         void Start()
         {
@@ -116,6 +118,8 @@ namespace agora_gaming_rtc
                         {
                             tmpi = videoRender.UpdateVideoRawData(mChannelId, uid, data, ref defWidth, ref defHeight);    
                         }
+
+                        
                     }
                     else
                     {
@@ -123,12 +127,18 @@ namespace agora_gaming_rtc
                     }
 
                     if (tmpi == -1)
+                    {
+                        //Debug.Log("tmpi = -1");
                         return;
+                    }
+                        
 
                     if (defWidth > 0 && defHeight > 0)
                     {
                         try
                         {
+                            
+
                             // create Texture in the first time update data
                             nativeTexture = new Texture2D((int)defWidth, (int)defHeight, TextureFormat.RGBA32, false);
                             nativeTexture.LoadRawTextureData(data, (int)defWidth * (int)defHeight * 4);
@@ -162,6 +172,8 @@ namespace agora_gaming_rtc
                         {
                             tmpi = videoRender.UpdateVideoRawData(mChannelId, mUid, data, ref width, ref height);
                         }
+
+                        
                     }
                     else
                     {

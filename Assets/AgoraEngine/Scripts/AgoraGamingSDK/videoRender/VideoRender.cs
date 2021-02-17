@@ -90,6 +90,8 @@ namespace agora_gaming_rtc
             if (_rtcEngine == null)
                 return (int)ERROR_CODE.ERROR_NOT_INIT_ENGINE;
 
+            
+
             int rc = IRtcEngineNative.updateVideoRawData(data, uid);
             if (rc == -1)
                 return -1;
