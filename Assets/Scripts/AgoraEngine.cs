@@ -1,9 +1,6 @@
 ﻿using UnityEngine;
 using agora_gaming_rtc;
 
-
-// 2. add a mechanism for grabbing a token from the server
-
 public class AgoraEngine : MonoBehaviour
 {
     public string appID;

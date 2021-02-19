@@ -21,8 +21,6 @@ public class AgoraChannelPanel : MonoBehaviour
     void Start()
     {
         userVideos = new List<AgoraUser>();
-
-        
     }
 
     public void Button_JoinChannel()
@@ -182,7 +180,6 @@ public class AgoraChannelPanel : MonoBehaviour
         AgoraUser newUser = new AgoraUser(uid, userVideo, go);
         userVideos.Add(newUser);
 
-        // is this necessary?
         go.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, spawnY);
 
         VideoSurface videoSurface = go.AddComponent<VideoSurface>();

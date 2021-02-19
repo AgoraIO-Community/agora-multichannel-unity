@@ -291,7 +291,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   channelName: 
   channelToken: 
-  userVideoList: []
   videoSpawnPoint: {fileID: 9144458290001817786}
   panelContentWindow: {fileID: 3148386125457849280}
   isPublishing: 0
