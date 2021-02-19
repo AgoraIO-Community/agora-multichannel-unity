@@ -23,6 +23,7 @@ public class AgoraChannelPanel : MonoBehaviour
         userVideos = new List<AgoraUser>();
     }
 
+    #region Buttons
     public void Button_JoinChannel()
     {
         if (newChannel == null)
@@ -100,7 +101,9 @@ public class AgoraChannelPanel : MonoBehaviour
             Debug.Log("Not published to any channel");
         }
     }
+    #endregion
 
+    #region Callbacks
     public void OnJoinChannelSuccessHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("Join party channel success - channel: " + channelID + " uid: " + uid);
@@ -128,27 +131,52 @@ public class AgoraChannelPanel : MonoBehaviour
     {
         Debug.Log("User: " + uid + " left party - channel: + " + uid + "for reason: " + reason);
         RemoveUserVideoSurface(uid);
+
+        // if the user left but isn't publishing, don't do anything
+
     }
+    #endregion
 
     private void OnRemoteVideoStatsHandler(string channelID, RemoteVideoStats remoteStats)
     {
-        // Check my remote users...
-        foreach (AgoraUser user in userVideos)
+        print("bit rate from user: " + remoteStats.uid + " is " + remoteStats.receivedBitrate);
+
+        // if bitRate > 0 && the uid is NOT in the list
+        // MakeImageSurface()
+        if(remoteStats.receivedBitrate > 0)
         {
-            if (user.userUid.ToString() == remoteStats.uid.ToString())
+            bool needsToMakeNewImageSurface = true;
+
+            foreach (AgoraUser user in userVideos)
             {
-                // ... are no longer sending any data across the stream.
-                if(remoteStats.receivedBitrate == 0)
+                if(remoteStats.uid == user.userUid)
                 {
-                    //user.SetPublishState(false);
-                    RemoveUserVideoSurface(user.userUid);
+                    needsToMakeNewImageSurface = false;
+                    break;
                 }
-                // ... are currently sending data across the stream
-                else if(remoteStats.receivedBitrate > 0)
+            }
+
+            if(needsToMakeNewImageSurface == true)
+            {
+                MakeImageSurface(channelID, remoteStats.uid);
+            }
+        }
+        // if bit rate == 0 && uid IS in the list
+        // RemoteUserVideoSurface()
+        else if (remoteStats.receivedBitrate == 0)
+        {
+            bool needsToRemoveUser = false;
+            foreach (AgoraUser user in userVideos)
+            {
+                if(user.userUid == remoteStats.uid)
                 {
-                    //user.SetPublishState(true);
-                    MakeImageSurface(channelID, user.userUid, false);
+                    needsToRemoveUser = true;
                 }
+            }
+
+            if (needsToRemoveUser == true)
+            {
+                RemoveUserVideoSurface(remoteStats.uid);
             }
         }
     }
@@ -229,6 +257,8 @@ public class AgoraChannelPanel : MonoBehaviour
             newChannel.LeaveChannel();
             newChannel.ReleaseChannel();
         }
+
+        IRtcEngine.Destroy();
     }
 }
 
