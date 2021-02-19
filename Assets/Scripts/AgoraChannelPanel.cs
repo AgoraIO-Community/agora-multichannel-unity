@@ -190,7 +190,7 @@ public class AgoraChannelPanel : MonoBehaviour
             videoSurface.SetForMultiChannelUser(channelID, uid);
 
             // the user video starts disabled, and enables after they begin publishing 
-            userVideo.enabled = false;
+            //userVideo.enabled = false;
         }
     }
 
