@@ -14,13 +14,13 @@ public class AgoraChannelPanel : MonoBehaviour
     [SerializeField] private bool isPublishing;
 
     private AgoraChannel newChannel;
-    private List<AgoraUser> userVideos;
+    private List<GameObject> userVideos;
 
     private const float SPACE_BETWEEN_USER_VIDEOS = 150f;
 
     void Start()
     {
-        userVideos = new List<AgoraUser>();
+        userVideos = new List<GameObject>();
     }
 
     #region Buttons
@@ -113,15 +113,14 @@ public class AgoraChannelPanel : MonoBehaviour
     public void OnUserJoinedHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("User: " + uid + "joined channel: + " + channelID);
-        MakeImageSurface(channelID, uid, false);
     }
 
     private void OnLeaveHandler(string channelID, RtcStats stats)
     {
         Debug.Log("You left the party channel.");
-        foreach (AgoraUser player in userVideos)
+        foreach (GameObject player in userVideos)
         {
-            Destroy(player.userGo);
+            Destroy(player);
         }
 
         userVideos.Clear();
@@ -129,46 +128,40 @@ public class AgoraChannelPanel : MonoBehaviour
 
     public void OnUserLeftHandler(string channelID, uint uid, USER_OFFLINE_REASON reason)
     {
-        Debug.Log("User: " + uid + " left party - channel: + " + uid + "for reason: " + reason);
+        Debug.Log("User: " + uid + " left party - channel: + " + uid + "for reason: " + reason);   
         RemoveUserVideoSurface(uid);
-
-        // if the user left but isn't publishing, don't do anything
-
     }
-    #endregion
+    
 
     private void OnRemoteVideoStatsHandler(string channelID, RemoteVideoStats remoteStats)
     {
-        print("bit rate from user: " + remoteStats.uid + " is " + remoteStats.receivedBitrate);
-
-        // if bitRate > 0 && the uid is NOT in the list
-        // MakeImageSurface()
+        // If user is publishing...
         if(remoteStats.receivedBitrate > 0)
         {
             bool needsToMakeNewImageSurface = true;
-
-            foreach (AgoraUser user in userVideos)
+            foreach (GameObject user in userVideos)
             {
-                if(remoteStats.uid == user.userUid)
+                if(remoteStats.uid.ToString() == user.name)
                 {
                     needsToMakeNewImageSurface = false;
                     break;
                 }
             }
-
-            if(needsToMakeNewImageSurface == true)
+            // ... and their video surface isn't currently displaying ...
+            if (needsToMakeNewImageSurface == true)
             {
+                // ... display their feed.
                 MakeImageSurface(channelID, remoteStats.uid);
             }
         }
-        // if bit rate == 0 && uid IS in the list
-        // RemoteUserVideoSurface()
+        // If user isn't publishing ...
         else if (remoteStats.receivedBitrate == 0)
         {
             bool needsToRemoveUser = false;
-            foreach (AgoraUser user in userVideos)
+            foreach (GameObject user in userVideos)
             {
-                if(user.userUid == remoteStats.uid)
+                // ... but their video stream is currently displaying...
+                if(remoteStats.uid.ToString() == user.name)
                 {
                     needsToRemoveUser = true;
                 }
@@ -176,10 +169,12 @@ public class AgoraChannelPanel : MonoBehaviour
 
             if (needsToRemoveUser == true)
             {
+                // ... remove their feed.
                 RemoveUserVideoSurface(remoteStats.uid);
             }
         }
     }
+    #endregion
 
     void MakeImageSurface(string channelID, uint uid, bool isLocalUser = false)
     {
@@ -205,10 +200,7 @@ public class AgoraChannelPanel : MonoBehaviour
         panelContentWindow.sizeDelta = new Vector2(0, userVideos.Count * SPACE_BETWEEN_USER_VIDEOS);
         float spawnY = userVideos.Count * SPACE_BETWEEN_USER_VIDEOS * -1;
 
-        //UpdatePlayerVideoPostions();
-
-        AgoraUser newUser = new AgoraUser(uid, userVideo, go);
-        userVideos.Add(newUser);
+        userVideos.Add(go);
 
         go.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, spawnY);
 
@@ -216,9 +208,6 @@ public class AgoraChannelPanel : MonoBehaviour
         if (isLocalUser == false)
         {
             videoSurface.SetForMultiChannelUser(channelID, uid);
-
-            // the user video starts disabled, and enables after they begin publishing 
-            //userVideo.enabled = false;
         }
     }
 
@@ -226,28 +215,27 @@ public class AgoraChannelPanel : MonoBehaviour
     {
         for (int i = 0; i < userVideos.Count; i++)
         {
-            userVideos[i].userGo.GetComponent<RectTransform>().anchoredPosition = Vector2.down * SPACE_BETWEEN_USER_VIDEOS * i;
+            userVideos[i].GetComponent<RectTransform>().anchoredPosition = Vector2.down * SPACE_BETWEEN_USER_VIDEOS * i;
         }
     }
 
     private void RemoveUserVideoSurface(uint deletedUID)
     {
-        foreach (AgoraUser user in userVideos)
+        foreach (GameObject user in userVideos)
         {
-            if (user.userUid.ToString() == deletedUID.ToString())
+            if (user.name == deletedUID.ToString())
             {
                 userVideos.Remove(user);
-                Destroy(user.userGo);
+                Destroy(user);
+
+                UpdatePlayerVideoPostions();
+
+                Vector2 oldContent = panelContentWindow.sizeDelta;
+                panelContentWindow.sizeDelta = oldContent + Vector2.down * SPACE_BETWEEN_USER_VIDEOS;
+                panelContentWindow.anchoredPosition = Vector2.zero;
                 break;
             }
-        }
-
-        // update positions of new players
-        UpdatePlayerVideoPostions();
-
-        Vector2 oldContent = panelContentWindow.sizeDelta;
-        panelContentWindow.sizeDelta = oldContent + Vector2.down * SPACE_BETWEEN_USER_VIDEOS;
-        panelContentWindow.anchoredPosition = Vector2.zero;
+        }        
     }
 
     private void OnApplicationQuit()
@@ -256,36 +244,6 @@ public class AgoraChannelPanel : MonoBehaviour
         {
             newChannel.LeaveChannel();
             newChannel.ReleaseChannel();
-        }
-
-        IRtcEngine.Destroy();
-    }
-}
-
-public class AgoraUser
-{
-    public AgoraUser(uint remoteUid, RawImage newUserVideo, GameObject newUserGo)
-    {
-        userUid = remoteUid;
-        userVideo = newUserVideo;
-        userGo = newUserGo;
-    }
-
-    public GameObject userGo { get; }
-
-    public RawImage userVideo { get; }
-
-    public uint userUid { get; }
-
-    public void SetPublishState(bool isBitRateActive)
-    {
-        if (isBitRateActive && userVideo.enabled == false)
-        {
-            userVideo.enabled = true;
-        }
-        else if (isBitRateActive == false && userVideo.enabled == true)
-        {
-            userVideo.enabled = false;
         }
     }
 }

@@ -32,7 +32,7 @@ public class AgoraEngine : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        //mRtcEngine = null;
-        //IRtcEngine.Destroy();
+        mRtcEngine = null;
+        IRtcEngine.Destroy();
     }
 }
