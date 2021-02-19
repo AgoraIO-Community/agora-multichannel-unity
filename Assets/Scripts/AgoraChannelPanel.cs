@@ -104,13 +104,13 @@ public class AgoraChannelPanel : MonoBehaviour
     public void OnJoinChannelSuccessHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("Join party channel success - channel: " + channelID + " uid: " + uid);
-        MakeImageSurface(channelID, uid, videoSpawnPoint, true);
+        MakeImageSurface(channelID, uid, true);
     }
 
     public void OnUserJoinedHandler(string channelID, uint uid, int elapsed)
     {
         Debug.Log("User: " + uid + "joined channel: + " + channelID);
-        MakeImageSurface(channelID, uid, videoSpawnPoint);
+        MakeImageSurface(channelID, uid, false);
     }
 
     private void OnLeaveHandler(string channelID, RtcStats stats)
@@ -140,18 +140,20 @@ public class AgoraChannelPanel : MonoBehaviour
                 // ... are no longer sending any data across the stream.
                 if(remoteStats.receivedBitrate == 0)
                 {
-                    user.SetPublishState(false);
+                    //user.SetPublishState(false);
+                    RemoveUserVideoSurface(user.userUid);
                 }
                 // ... are currently sending data across the stream
                 else if(remoteStats.receivedBitrate > 0)
                 {
-                    user.SetPublishState(true);
+                    //user.SetPublishState(true);
+                    MakeImageSurface(channelID, user.userUid, false);
                 }
             }
         }
     }
 
-    void MakeImageSurface(string channelID, uint uid, Transform spawnPoint, bool isLocalUser = false)
+    void MakeImageSurface(string channelID, uint uid, bool isLocalUser = false)
     {
         if (GameObject.Find(uid.ToString()) != null)
         {
@@ -166,9 +168,9 @@ public class AgoraChannelPanel : MonoBehaviour
         go.transform.localScale = new Vector3(1, -1, 1);
 
         // Child it inside the panel scroller
-        if (spawnPoint != null)
+        if (videoSpawnPoint != null)
         {
-            go.transform.SetParent(spawnPoint);
+            go.transform.SetParent(videoSpawnPoint);
         }
 
         // Update the layout of the panel scrollers
