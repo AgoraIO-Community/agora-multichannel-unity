@@ -241,12 +241,12 @@ PrefabInstance:
     - target: {fileID: 6476568097439478238, guid: ed8bf5a8de6d84d1b99e87dc1d98adaa,
         type: 3}
       propertyPath: channelName
-      value: ChannelTwo
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6476568097439478238, guid: ed8bf5a8de6d84d1b99e87dc1d98adaa,
         type: 3}
       propertyPath: channelToken
-      value: 006c36f034a41a5476fae92da698a5f2396IADdbCGKVQRc82mWfpK7NwRQ7DEr/yW847qt18NVjQTW7cyrbnIAAAAAEABoKgnHB6kxYAEAAQAGqTFg
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 751608391878800196, guid: ed8bf5a8de6d84d1b99e87dc1d98adaa, type: 3}
@@ -478,7 +478,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d820744914074e3bad9aed43673d386, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  appID: e22a665af29d4904860d3e5f62fb4544
+  appID: 
 --- !u!4 &875705573
 Transform:
   m_ObjectHideFlags: 0
@@ -762,12 +762,12 @@ PrefabInstance:
     - target: {fileID: 6476568097439478238, guid: ed8bf5a8de6d84d1b99e87dc1d98adaa,
         type: 3}
       propertyPath: channelName
-      value: ChannelOne
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6476568097439478238, guid: ed8bf5a8de6d84d1b99e87dc1d98adaa,
         type: 3}
       propertyPath: channelToken
-      value: 006e22a665af29d4904860d3e5f62fb4544IADCfClE8jFQabzKYZk3/CNJ6nUWZnaaGtDxQm+v7Q3XtVunyBkAAAAAEABoKgnH7qgxYAEAAQDuqDFg
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ed8bf5a8de6d84d1b99e87dc1d98adaa, type: 3}
