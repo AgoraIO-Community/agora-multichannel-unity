@@ -187,9 +187,6 @@ public class AgoraChannelPanel : MonoBehaviour
         GameObject go = new GameObject();
         go.name = uid.ToString();
         RawImage userVideo = go.AddComponent<RawImage>();
-        go.transform.localScale = new Vector3(1, -1, 1);
-        go.transform.localScale = new Vector3(1, -1, 1);
-        go.transform.localScale = new Vector3(1, -1, 1);
 
         // Child it inside the panel scroller
         if (videoSpawnPoint != null)
@@ -197,6 +194,7 @@ public class AgoraChannelPanel : MonoBehaviour
             go.transform.SetParent(videoSpawnPoint);
         }
 
+        go.transform.localScale = new Vector3(1, -1, 1);
         // Update the layout of the panel scrollers
         panelContentWindow.sizeDelta = new Vector2(0, userVideos.Count * SPACE_BETWEEN_USER_VIDEOS);
         float spawnY = userVideos.Count * SPACE_BETWEEN_USER_VIDEOS * -1;
