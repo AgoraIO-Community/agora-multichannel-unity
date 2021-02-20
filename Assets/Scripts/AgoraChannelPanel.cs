@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using agora_gaming_rtc;
 using UnityEngine.UI;
@@ -188,6 +187,8 @@ public class AgoraChannelPanel : MonoBehaviour
         GameObject go = new GameObject();
         go.name = uid.ToString();
         RawImage userVideo = go.AddComponent<RawImage>();
+        go.transform.localScale = new Vector3(1, -1, 1);
+        go.transform.localScale = new Vector3(1, -1, 1);
         go.transform.localScale = new Vector3(1, -1, 1);
 
         // Child it inside the panel scroller
